@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>J.A.R.V.I.S</title>
+<style>
+:root{--bg:#04060a;--panel:#0a0f16;--cyan:#00f0ff;--green:#00ff9c;--dim:#0e6b73;--amber:#ffb000;--red:#ff3b5c;--text:#c9f6ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 500px at 50% -10%,#06222b 0,var(--bg) 60%) fixed,var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Arabic","Noto Naskh Arabic",Tahoma,sans-serif;
+  display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;
+  background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px)}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--dim)}
+h1{margin:0;font-size:20px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 12px #00f0ff88;font-family:ui-monospace,Consolas,monospace}
+.sp{flex:1}
+#led{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px currentColor;color:var(--green)}
+#led.think{background:var(--amber);color:var(--amber);animation:b .6s infinite alternate}
+#led.listen{background:var(--cyan);color:var(--cyan);animation:b .6s infinite alternate}
+#led.err{background:var(--red);color:var(--red)}
+@keyframes b{to{opacity:.2}}
+#st{font:12px ui-monospace,Consolas,monospace;color:var(--dim)}
+button{font:inherit;cursor:pointer}
+.ib{background:var(--panel);color:var(--cyan);border:1px solid var(--dim);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700}
+.ib:active{background:var(--dim)}
+.ib.on{border-color:var(--cyan);box-shadow:0 0 10px #00f0ff55}
+#chat{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+.b{max-width:92%;padding:10px 13px;border-radius:12px;background:var(--panel);border:1px solid;line-height:1.7;
+  white-space:pre-wrap;word-break:break-word;font-size:15.5px;text-align:start;animation:in .2s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.b.u{border-color:#00ff9c66;color:var(--green);align-self:flex-start}
+.b.a{border-color:#00f0ff66;color:var(--cyan);align-self:flex-start;box-shadow:0 0 14px #00f0ff14}
+.b.s{border-color:#ffb00066;color:var(--amber);align-self:center;font-size:13px}
+.act{display:inline-block;margin-top:8px;background:var(--dim);color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-weight:700;font-size:14px}
+form{display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--dim)}
+#in{flex:1;min-width:0;background:var(--panel);color:var(--green);border:1px solid var(--dim);border-radius:10px;padding:12px;font:inherit;font-size:16px;outline:none}
+#in:focus{border-color:var(--cyan)}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--cyan);border-radius:14px;width:min(92vw,420px);padding:16px}
+dialog::backdrop{background:#000a}
+dialog label{display:block;margin:12px 0 4px;font-size:13px;color:var(--dim)}
+dialog input,dialog select{width:100%;background:var(--bg);color:var(--green);border:1px solid var(--dim);border-radius:8px;padding:10px;font:inherit;font-size:15px;direction:ltr;text-align:left}
+dialog .row{display:flex;gap:8px;margin-top:16px}
+dialog .row button{flex:1}
+.chk{display:flex!important;align-items:center;gap:8px;color:var(--text)!important}
+.chk input{width:auto}
+</style>
+</head>
+<body>
+<header>
+  <div id="led"></div><h1>J.A.R.V.I.S</h1><span id="st">ONLINE</span><div class="sp"></div>
+  <button class="ib" id="live" type="button">LIVE</button>
+  <button class="ib" id="set" type="button">SET</button>
+</header>
+<div id="chat"></div>
+<form id="f" autocomplete="off">
+  <input id="in" dir="auto" placeholder="دستور یا سؤال..." enterkeyhint="send">
+  <button class="ib" id="mic" type="button">MIC</button>
+  <button class="ib" type="submit">SEND</button>
+</form>
+
+<dialog id="dlg">
+  <h3 style="margin:0;color:var(--cyan)">تنظیمات</h3>
+  <label>API key</label><input id="k" type="password" autocomplete="off">
+  <label>Provider</label>
+  <select id="p"><option value="gemini">gemini</option><option value="anthropic">anthropic</option></select>
+  <label>Model</label><input id="m">
+  <label>زبان گفتار (میکروفون)</label>
+  <select id="l"><option value="fa-IR">فارسی (fa-IR)</option><option value="en-US">English (en-US)</option></select>
+  <label class="chk"><input type="checkbox" id="v"> خروجی صوتی</label>
+  <div class="row">
+    <button class="ib" id="save" type="button">ذخیره</button>
+    <button class="ib" id="clr" type="button">پاک کردن حافظه</button>
+    <button class="ib" id="close" type="button">بستن</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const DEF = {key:"", provider:"gemini", model:"gemini-2.5-flash", lang:"fa-IR", voice:true};
+let cfg = {...DEF};
+try { cfg = {...DEF, ...JSON.parse(localStorage.getItem("jarvis_cfg") || "{}")}; } catch (e) {}
+const saveCfg = () => { try { localStorage.setItem("jarvis_cfg", JSON.stringify(cfg)); } catch (e) {} };
+
+const SYSTEM = `You are J.A.R.V.I.S, a capable, witty and concise AI assistant on the user's phone (a web app in the browser).
+When the user asks you to DO something (open a website, search the web, search/play on YouTube, open an app, call a number, show something on the map), reply with ONLY a single-line JSON object and nothing else:
+{"action":"<open_url|web_search|youtube_search|open_app|call|map>","target":"<url / search query / app name / phone number / place>","say":"<very short confirmation in the user's language>"}
+For open_app use the common app name (telegram, whatsapp, instagram, youtube, spotify, gmail, maps, discord, twitter). If the request is ambiguous, ask one short question in plain text.
+For everything else answer in plain text in the same language as the user: short, no markdown, no emojis, natural to be read aloud.`;
+
+/* ---------------- helpers ---------------- */
+const FA = /[\u0600-\u06FF]/;
+const isFa = t => { const L = [...t].filter(c => /\p{L}/u.test(c)); return L.length > 0 && L.filter(c => FA.test(c)).length / L.length > 0.3; };
+const norm = s => s.trim().toLowerCase().replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/[\u200c\u200f\u200e]/g, " ").replace(/\s+/g, " ");
+const STOP = new Set(["برنامه","برنامه‌ی","اپ","اپلیکیشن","app","application","the","لطفا","جارویس"]);
+const clean = s => norm(s).replace(/[.!؟?،,"']/g, " ").split(" ").filter(w => w && !STOP.has(w)).join(" ");
+
+const chat = $("#chat");
+function add(text, cls, link) {
+  const d = document.createElement("div");
+  d.className = "b " + cls; d.dir = "auto"; d.textContent = text;
+  if (link) {
+    const a = document.createElement("a");
+    a.className = "act"; a.href = link.url; a.textContent = (link.label || "باز کن") + " ↗";
+    if (/^https?:/.test(link.url)) { a.target = "_blank"; a.rel = "noopener"; }
+    d.appendChild(document.createElement("br")); d.appendChild(a);
+  }
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+function status(txt, cls) { $("#st").textContent = txt; $("#led").className = cls || ""; }
+
+/* ---------------- actions ---------------- */
+const APPS = [
+  [["telegram","تلگرام"], "tg://", "تلگرام"],
+  [["whatsapp","واتساپ","واتس اپ"], "whatsapp://send", "واتساپ"],
+  [["instagram","اینستاگرام","اینستا"], "instagram://app", "اینستاگرام"],
+  [["youtube","یوتیوب"], "https://www.youtube.com/", "یوتیوب"],
+  [["spotify","اسپاتیفای"], "spotify:", "اسپاتیفای"],
+  [["gmail","جیمیل","email","ایمیل"], "mailto:", "ایمیل"],
+  [["maps","نقشه","نقشه گوگل","google maps"], "https://www.google.com/maps", "نقشه"],
+  [["discord","دیسکورد"], "discord://", "دیسکورد"],
+  [["twitter","توییتر","x"], "twitter://", "توییتر"],
+  [["netflix","نتفلیکس"], "nflx://", "نتفلیکس"],
+  [["play store","پلی استور","فروشگاه پلی"], "market://", "Play Store"],
+  [["phone","تماس","شماره گیر"], "tel:", "شماره‌گیر"],
+  [["messages","پیامک","sms"], "sms:", "پیامک"],
+];
+const q = encodeURIComponent;
+function fixUrl(u) {
+  u = u.trim(); if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  return /^https?:\/\/\S+$/i.test(u) ? u : null;
+}
+function doAction(a) {
+  const t = String(a.target || "").trim(), say = a.say;
+  let url, label, msg;
+  switch (a.action) {
+    case "open_url": url = fixUrl(t); if (!url) return {text: "آدرس معتبر نیست."}; label = "باز کردن سایت"; msg = say || t + " باز شد."; break;
+    case "web_search": url = "https://www.google.com/search?q=" + q(t); label = "نتایج گوگل"; msg = say || "در گوگل جستجو کردم."; break;
+    case "youtube_search": url = "https://www.youtube.com/results?search_query=" + q(t); label = "نتایج یوتیوب"; msg = say || "در یوتیوب جستجو کردم."; break;
+    case "map": url = "https://www.google.com/maps/search/?api=1&query=" + q(t); label = "نقشه"; msg = say || "روی نقشه پیدا کردم."; break;
+    case "call": url = "tel:" + t.replace(/[^\d+]/g, ""); label = "تماس"; msg = say || "آماده‌ی تماس."; break;
+    case "open_app": {
+      const n = clean(t), hit = APPS.find(x => x[0].includes(n));
+      if (!hit) return {text: "باز کردن «" + t + "» در نسخه‌ی وب پشتیبانی نمی‌شود. فقط برنامه‌هایی مثل تلگرام، واتساپ، اینستاگرام، یوتیوب، اسپاتیفای و ایمیل."};
+      url = hit[1]; label = hit[2]; msg = say || "«" + hit[2] + "» آماده است."; break;
+    }
+    default: return null;
+  }
+  return {text: msg, link: {url, label}};
+}
+function parseAction(raw) {
+  const s = raw.replace(/^```(?:json)?|```$/gm, "").trim(), m = s.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { const d = JSON.parse(m[0]); return (d && d.action && String(d.target || "").trim()) ? d : null; } catch (e) { return null; }
+}
+const FA_OPEN = /^(?:لطفا\s+)?(?:جارویس\s+)?(.+?)\s*(?:رو|را)?\s*(?:باز\s*کن|باز\s*بکن|بازکن|اجرا\s*کن|اجرا\s*بکن|بالا\s*بیار)\s*[.!]?$/;
+const EN_OPEN = /^(?:please\s+)?(?:jarvis\s+)?(?:open|launch|start|run)\s+(.+?)\s*[.!]?$/;
+const FA_SEARCH = /^(?:لطفا\s+)?(?:جارویس\s+)?(.+?)\s*(?:رو|را)?\s*(?:سرچ|جستجو)\s*(?:کن|بکن)\s*$/;
+const EN_SEARCH = /^(?:search(?: for)?|google)\s+(.+)$/;
+const URLRE = /^[\w-]+(\.[\w-]+)*\.(com|org|net|ir|io|dev|app|co|ai|me)(\/\S*)?$/;
+function local(text) {
+  const t = norm(text);
+  if (/^(ساعت|تاریخ|time|date|\/time)$/.test(t)) {
+    const d = new Date(); return {text: d.toLocaleDateString("fa-IR", {weekday: "long", year: "numeric", month: "long", day: "numeric"}) + " - " + d.toLocaleTimeString("fa-IR")};
+  }
+  let m = t.match(FA_SEARCH) || t.match(EN_SEARCH);
+  if (m) return doAction({action: "web_search", target: m.slice(1).find(Boolean)});
+  m = t.match(FA_OPEN) || t.match(EN_OPEN);
+  if (!m) return null;
+  const raw = norm(m[1]).replace(/^[\s.!؟?]+|[\s.!؟?]+$/g, "");
+  if (URLRE.test(raw)) return doAction({action: "open_url", target: raw});
+  const n = clean(m[1]); if (!n) return null;
+  return APPS.some(x => x[0].includes(n)) ? doAction({action: "open_app", target: n}) : null;
+}
+
+/* ---------------- LLM ---------------- */
+let history = [];
+async function post(url, body, headers) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json", ...headers}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error("HTTP " + r.status + ": " + (await r.text()).slice(0, 250));
+  return r.json();
+}
+async function gemini() {
+  const d = await post(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent`, {
+    systemInstruction: {parts: [{text: SYSTEM}]},
+    contents: history.map(h => ({role: h.role === "user" ? "user" : "model", parts: [{text: h.text}]}))
+  }, {"x-goog-api-key": cfg.key});
+  const p = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
+  if (!p) throw new Error("پاسخ نامعتبر: " + JSON.stringify(d).slice(0, 250));
+  return p.map(x => x.text || "").join("").trim() || "(پاسخ خالی)";
+}
+async function anthropic() {
+  const d = await post("https://api.anthropic.com/v1/messages", {
+    model: cfg.model, max_tokens: 1000, system: SYSTEM,
+    messages: history.map(h => ({role: h.role, content: h.text}))
+  }, {"x-api-key": cfg.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"});
+  return (d.content || []).map(x => x.text || "").join("").trim() || "(پاسخ خالی)";
+}
+async function ask(text) {
+  if (!cfg.key) throw new Error("کلید API تنظیم نشده. دکمه‌ی SET را بزنید.");
+  history.push({role: "user", text});
+  try {
+    const ans = cfg.provider === "anthropic" ? await anthropic() : await gemini();
+    history.push({role: "assistant", text: ans});
+    history = history.slice(-20); while (history.length && history[0].role !== "user") history.shift();
+    return ans;
+  } catch (e) { history.pop(); throw e; }
+}
+
+/* ---------------- voice ---------------- */
+let voices = [], warned = false;
+const loadVoices = () => { voices = speechSynthesis.getVoices(); };
+if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text, done) {
+  if (!cfg.voice || !("speechSynthesis" in window)) return done && done();
+  const fa = isFa(text);
+  const v = voices.find(x => x.lang.toLowerCase().startsWith(fa ? "fa" : "en"));
+  if (fa && !v) {
+    if (!warned) { warned = true; add("گوشی صدای فارسی ندارد. در تنظیمات گوشی (Text-to-speech) یک موتور با زبان فارسی نصب کنید. فعلاً خروجی صوتی فارسی رد می‌شود.", "s"); }
+    return done && done();
+  }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[`*#_>~|]/g, ""));
+  if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+  u.onend = u.onerror = () => done && done();
+  speechSynthesis.speak(u);
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, live = false;
+function listen() {
+  if (!SR) return add("مرورگر شما تشخیص گفتار ندارد. از Chrome استفاده کنید (و صفحه باید با https باز شده باشد).", "s");
+  if (rec) { try { rec.abort(); } catch (e) {} }
+  rec = new SR(); rec.lang = cfg.lang; rec.interimResults = false; rec.maxAlternatives = 1;
+  let got = false;
+  rec.onstart = () => { status("LISTENING", "listen"); $("#mic").classList.add("on"); };
+  rec.onresult = e => { got = true; send(e.results[0][0].transcript); };
+  rec.onerror = e => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    add("خطای میکروفون: " + e.error + (e.error === "not-allowed" ? " (اجازه‌ی میکروفون را بدهید؛ صفحه باید https باشد)" : ""), "s");
+    live = false; $("#live").classList.remove("on");
+  };
+  rec.onend = () => { $("#mic").classList.remove("on"); if (!got) { status("ONLINE"); if (live) setTimeout(listen, 300); } };
+  try { rec.start(); } catch (e) {}
+}
+
+/* ---------------- main flow ---------------- */
+let busy = false;
+async function send(text) {
+  text = (text || "").trim(); if (!text || busy) return;
+  $("#in").value = ""; add(text, "u");
+  const low = norm(text);
+  if (low === "/clear" || low === "پاک کن") { chat.innerHTML = ""; return; }
+  if (low === "/reset") { history = []; add("حافظه پاک شد.", "a"); return; }
+  busy = true; status("THINKING", "think");
+  let res = null, err = null;
+  try {
+    res = local(text);
+    if (!res) {
+      const raw = await ask(text), act = parseAction(raw);
+      res = act ? (doAction(act) || {text: raw}) : {text: raw};
+    }
+  } catch (e) { err = e; }
+  busy = false;
+  if (err) { add(String(err.message || err), "s"); status("ERROR", "err"); return; }
+  add(res.text, "a", res.link); status("ONLINE");
+  if (res.link && /^https?:/.test(res.link.url)) { try { window.open(res.link.url, "_blank", "noopener"); } catch (e) {} }
+  speak(res.text, () => { if (live) listen(); });
+  if (!cfg.voice && live) listen();
+}
+
+$("#f").addEventListener("submit", e => { e.preventDefault(); send($("#in").value); });
+$("#mic").addEventListener("click", () => { speechSynthesis && speechSynthesis.cancel(); listen(); });
+$("#live").addEventListener("click", () => {
+  live = !live; $("#live").classList.toggle("on", live);
+  if (live) { add("گفتگوی پیوسته روشن شد؛ فقط صحبت کنید.", "s"); listen(); } else { try { rec && rec.abort(); } catch (e) {} status("ONLINE"); }
+});
+
+/* settings */
+const dlg = $("#dlg");
+$("#set").addEventListener("click", () => {
+  $("#k").value = cfg.key; $("#p").value = cfg.provider; $("#m").value = cfg.model; $("#l").value = cfg.lang; $("#v").checked = cfg.voice;
+  dlg.showModal();
+});
+$("#p").addEventListener("change", () => { $("#m").value = $("#p").value === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5-5"; });
+$("#save").addEventListener("click", () => {
+  cfg = {key: $("#k").value.trim(), provider: $("#p").value, model: $("#m").value.trim() || DEF.model, lang: $("#l").value, voice: $("#v").checked};
+  saveCfg(); dlg.close(); add("تنظیمات ذخیره شد.", "s");
+});
+$("#clr").addEventListener("click", () => { history = []; add("حافظه پاک شد.", "s"); });
+$("#close").addEventListener("click", () => dlg.close());
+
+add("سلام، من جارویس هستم. بنویسید یا با MIC بگویید. مثلاً: «تلگرام رو باز کن» یا «پایتون چیه رو سرچ کن».", "a");
+if (!cfg.key) { add("اول دکمه‌ی SET را بزنید و کلید API را وارد کنید.", "s"); }
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
